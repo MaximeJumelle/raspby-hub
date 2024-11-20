@@ -23,11 +23,11 @@ git clone https://github.com/MaximeJumelle/raspby-hub.git
 cd raspby-hub
 ```
 
-## Docker Images
+## Docker Images
 
 The `docker/` folder contains many Docker images configurations to allow you to easily build and run applications safely.
 
-### Run a Raspby Image
+### Run a Raspby Image
 
 If you want to run a container with a Raspby images, there are a few things to consider first. Raspberry Pi peripherals, such as GPIO pins, are typically accessed through specific libraries (e.g., `RPi.GPIO`, `gpiozero`) that need access to the Raspberry Pi's device files. You then **have pass the `/dev` and `/sys` directories** (or any other specific devices, such an USB device like a camera) to the container.
 
