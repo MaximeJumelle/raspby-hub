@@ -1,0 +1,8 @@
+{
+    "venvPath": "venv",
+    "venv": "venv",
+    "reportOptionalMemberAccess": false,
+    "include": [
+        "src/**/*"
+    ]
+}

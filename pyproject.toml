@@ -1,0 +1,3 @@
+[tool.ruff]
+exclude = ["venv", "**/__init__.py"]
+force-exclude = true

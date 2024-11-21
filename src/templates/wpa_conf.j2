@@ -1,0 +1,8 @@
+{{- if wifi_country is not None}}
+country={{ wifi_country }}
+{{- endif }}
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+network={{
+    ssid="{{ wifi_ssid }}"
+    psk="{{ wifi_password }}"
+}}

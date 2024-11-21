@@ -29,7 +29,7 @@ The `docker/` folder contains many Docker images configurations to allow you to 
 
 ### Run a Raspby Image
 
-If you want to run a container with a Raspby images, there are a few things to consider first. Raspberry Pi peripherals, such as GPIO pins, are typically accessed through specific libraries (e.g., `RPi.GPIO`, `gpiozero`) that need access to the Raspberry Pi's device files. You then **have pass the `/dev` and `/sys` directories** (or any other specific devices, such an USB device like a camera) to the container.
+If you want to run a container with a Raspby images, there are a few things to consider first. Raspberry Pi peripherals, such as GPIO pins, are typically accessed through specific libraries (e.g., `RPi.GPIO`, `gpiozero`) that need access to the Raspberry Pi's device files. You then **have to pass the `/dev` and `/sys` directories** (or any other specific devices, such an USB device like a camera) to the container.
 
 It is also advised to use the `--privileged ` flag to allow the container access to hardware. Here is an example of a `docker run` command you can execute on the Raspberry Pi.
 
