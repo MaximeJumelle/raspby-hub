@@ -1,13 +1,17 @@
+import os
 import sys
 
 import usb.core
 import usb.util
+import pyudev
 
-from typing import Optional
+from typing import Optional, List
 
 from src.logging import logger
 
 from .utils import input_challenge
+from .models import USBDevice
+
 
 
 def install_raspbian(
@@ -17,28 +21,32 @@ def install_raspbian(
     logger.info("Scanning available USB devices...")
         
     # Find all USB devices
-    devices = usb.core.find(find_all=True)
+    raw_devices = usb.core.find(find_all=True)
 
-    if devices is None:
+    if raw_devices is None:
         logger.error("Could not list USB devices. Do you have sufficient permissions?")
         return
     
-    usb_devices_list = []
+    usb_devices_list: List[USBDevice] = []
 
     # Print details of each device
-    for device in devices:
-        device_id = f"{device.idVendor:04x}:{device.idProduct:04x}"
+    for raw_device in raw_devices:
+
+        device = USBDevice(
+            vendor_id=raw_device.idVendor,
+            product_id=raw_device.idProduct,
+            manufacturer_id=raw_device.iManufacturer,
+        )
+
         try:
             # Retrieve descriptors
-            manufacturer = usb.util.get_string(device, device.iManufacturer)
-            if manufacturer is None:
-                manufacturer = "Unknown"
-            product = usb.util.get_string(device, device.iProduct)
-            usb_devices_list.append(f"{product} ({manufacturer}) - {device_id}")
+            device.manufacturer_name = usb.util.get_string(raw_device, raw_device.iManufacturer)
+            device.name = usb.util.get_string(raw_device, raw_device.iProduct)
+            usb_devices_list.append(device)
         except usb.core.USBError as e:
-            logger.warning(f"Could not retrieve information on USB device '{device_id}' : {e}")
+            logger.warning(f"Could not retrieve information on USB device '{device}' : {e}")
         except Exception:
-            logger.warning(f"Could not retrieve information on USB device '{device_id}'. Do you have sufficient permissions?")
+            logger.warning(f"Could not retrieve information on USB device '{device}'. Do you have sufficient permissions?")
 
     if len(usb_devices_list) == 0:
         logger.critical("Could not list USB devices. Do you have sufficient permissions?")
@@ -54,3 +62,18 @@ def install_raspbian(
         expected_type=int,
         validator=lambda x: 1 <= x <= len(usb_devices_list)
     )
+
+    selected_device = usb_devices_list[choice - 1]
+
+    mount_paths = selected_device.find_mount_path()
+    print(mount_paths)
+
+    if len(mount_paths) == 0:
+        logger.critical(f"Could not find any mount path for the selected device '{selected_device}'.")
+        sys.exit(1)
+
+        # If we have more than one dev name, it means the device has multiple partitions
+    if len(mount_paths) > 1:
+        logger.warning(f"More than one partition detected for the selected device '{selected_device}'.")
+
+    # TODO: If > 1 partition, or if mount point is not empty, ask to format, else proceed to installing Raspbian
