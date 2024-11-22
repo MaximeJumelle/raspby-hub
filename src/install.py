@@ -1,16 +1,14 @@
-import os
 import sys
 
 import usb.core
 import usb.util
-import pyudev
 
 from typing import Optional, List
 
 from src.logging import logger
 
-from .utils import input_challenge
-from .models import USBDevice
+from src.utils import input_challenge
+from src.models import USBDevice
 
 
 
@@ -19,7 +17,7 @@ def install_raspbian(
 ):
     """Install Raspbian OS with utility tools and packages on a device."""
     logger.info("Scanning available USB devices...")
-        
+
     # Find all USB devices
     raw_devices = usb.core.find(find_all=True)
 
@@ -64,16 +62,16 @@ def install_raspbian(
     )
 
     selected_device = usb_devices_list[choice - 1]
+    #if not selected_device.is_fs_empty():
+    if True:
+        format_choice = input_challenge(
+            prompt="Do you want to format the device before installing Raspbian? (yes/no): ",
+            expected_type=str,
+            validator=lambda x: x.lower() in ["yes", "no"]
+        )
 
-    mount_paths = selected_device.find_mount_path()
-    print(mount_paths)
-
-    if len(mount_paths) == 0:
-        logger.critical(f"Could not find any mount path for the selected device '{selected_device}'.")
-        sys.exit(1)
-
-        # If we have more than one dev name, it means the device has multiple partitions
-    if len(mount_paths) > 1:
-        logger.warning(f"More than one partition detected for the selected device '{selected_device}'.")
-
-    # TODO: If > 1 partition, or if mount point is not empty, ask to format, else proceed to installing Raspbian
+        if format_choice.lower() == "yes":
+            selected_device.format_device(filesystem="ext4")
+        else:
+            logger.critical("You must format the device before installing Raspbian on it.")
+            sys.exit(1)

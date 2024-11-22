@@ -1,4 +1,6 @@
 import os
+import subprocess
+import shlex
 
 from typing import TypeVar, Type, Callable, Optional, cast
 from jinja2 import Environment, FileSystemLoader
@@ -14,6 +16,25 @@ def render_template(name: str, **kwargs) -> str:
     env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates")))
     template = env.get_template(name)
     return template.render(**kwargs)
+
+def run_subprocess(command: str, shell: bool = False, input: Optional[str] = None) -> int:
+    """Run a subprocess, print its output (either stdout or stderr), and return its exit code."""
+    process = subprocess.run(
+        shlex.split(command) if not shell else command,
+        shell=shell,
+        input=input.encode() if input is not None else None,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    stdout, stderr = process.stdout, process.stderr
+
+    for line in stdout.decode().splitlines():
+        print(f"\033[90m| {line}\033[0m")
+    if stderr:
+        print(f"\033[91m{stderr.decode()}\033[0m")
+
+    return process.returncode
+
 
 def input_challenge(
     prompt: str,
