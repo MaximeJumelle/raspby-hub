@@ -62,16 +62,15 @@ def install_raspbian(
     )
 
     selected_device = usb_devices_list[choice - 1]
-    #if not selected_device.is_fs_empty():
-    if True:
-        format_choice = input_challenge(
-            prompt="Do you want to format the device before installing Raspbian? (yes/no): ",
-            expected_type=str,
-            validator=lambda x: x.lower() in ["yes", "no"]
-        )
+    format_choice = input_challenge(
+        prompt="Do you want to format the device before installing Raspbian? (yes/no): ",
+        expected_type=str,
+        validator=lambda x: x.lower() in ["yes", "no"]
+    )
 
-        if format_choice.lower() == "yes":
-            selected_device.format_device(filesystem="ext4")
-        else:
-            logger.critical("You must format the device before installing Raspbian on it.")
-            sys.exit(1)
+    if format_choice.lower() == "yes":
+        selected_device.format_device(filesystem="ext4")
+
+    logger.info(f"Installing Raspbian on device '{selected_device}'...")
+    selected_device.install_raspbian()
+    

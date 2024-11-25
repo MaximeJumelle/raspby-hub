@@ -1,10 +1,12 @@
+import requests
 import sys
-import re
 import os
 import pyudev
 import itertools
+import re
 
 from typing import Optional, List
+from datetime import datetime
 
 from src.logging import logger
 from src.utils import input_challenge, run_subprocess
@@ -28,7 +30,8 @@ class USBDevice:
             found_vendor_id: Optional[int] = udev.get('ID_VENDOR_ID')
             found_model_id: Optional[int] = udev.get('ID_MODEL_ID')
             if found_vendor_id is not None and str(found_vendor_id) == f"{self.vendor_id:04x}" \
-                and found_model_id is not None and str(found_model_id) == f"{self.product_id:04x}":
+            and found_model_id is not None and str(found_model_id) == f"{self.product_id:04x}" \
+            and "ID_PART_TABLE_TYPE" in udev:
                 return udev.get('DEVNAME')
     
     def find_dev_names(self) -> List[str]:
@@ -38,7 +41,8 @@ class USBDevice:
             found_vendor_id: Optional[int] = udev.get('ID_VENDOR_ID')
             found_model_id: Optional[int] = udev.get('ID_MODEL_ID')
             if found_vendor_id is not None and str(found_vendor_id) == f"{self.vendor_id:04x}" \
-                and found_model_id is not None and str(found_model_id) == f"{self.product_id:04x}":
+                and found_model_id is not None and str(found_model_id) == f"{self.product_id:04x}" \
+            and "ID_PART_TABLE_TYPE" in udev:
                 udev_names.append(udev.get('DEVNAME'))
         return udev_names
     
@@ -82,9 +86,11 @@ class USBDevice:
             run_subprocess(f"umount {partition_path}")
         
         # Wiping all partitions
+        logger.info(f"Wiping all partitions on the device '{udev_name}'.")
         run_subprocess(f"wipefs --all {udev_name}")
 
         # Running fdisk to create a new partition
+        logger.info(f"Creating a new partition on the device '{udev_name}'.")
         run_subprocess(f"fdisk {udev_name}", input="o\ng\nn\n\n\n\nw\n")
 
         # Format the partition using filesystem type
@@ -100,3 +106,42 @@ class USBDevice:
         if not os.path.exists(mount_path):
             os.mkdir(mount_path)
         run_subprocess(f"mount {udev_name} {mount_path}")
+
+    def install_raspbian(self):
+        """Install Raspbian OS on the device."""
+        def get_latest_raspbian_url():
+            url = "https://downloads.raspberrypi.com/raspios_lite_armhf/images/"
+            response = requests.get(url)
+            if response.status_code != 200:
+                logger.critical("Failed to fetch the Raspbian URL on download archives.")
+                sys.exit(1)
+
+            body = response.text
+            dates = re.findall(r"raspios_lite_armhf-(\d{4}-\d{2}-\d{2})", body, flags=re.MULTILINE)
+            if len(dates) == 0:
+                logger.critical("Failed to fetch the Raspbian URL on download archives : dates not found.")
+                sys.exit(1)
+            current_date = datetime(year=2000, month=1, day=1)
+            for d in dates:
+                current_date = max(current_date, datetime.strptime(d, "%Y-%m-%d"))
+
+            current_date_formatted = current_date.strftime("%Y-%m-%d")
+            return f"{url}raspios_lite_armhf-{current_date_formatted}/{current_date_formatted}-raspios-bookworm-armhf-lite.img.xz"
+
+        raspbian_url = get_latest_raspbian_url()
+        raspbian_archive = raspbian_url.split("/")[-1]
+        raspbian_filename = re.sub(r"\.xz$", "", raspbian_archive)
+
+        if os.path.exists(f".images/{raspbian_filename}"):
+            logger.info(f"Found most recent Raspbian OS '{raspbian_filename}'.")
+        else:
+            logger.info(f"Downloading Raspbian from '{raspbian_url}' locally.")
+            run_subprocess(f"curl -o .images/{raspbian_archive} {raspbian_url}")
+            logger.info(f"Decompressing Raspbian archive.")
+            run_subprocess(f"xz --decompress .images/{raspbian_archive}")
+            os.remove(f".images/{raspbian_archive}")
+
+        udev_name = self.find_dev_name()
+        logger.info(f"Copying Raspbian image to '{udev_name}'.")
+        run_subprocess(f"dd if=.images/{raspbian_filename} of={udev_name} bs=4M status=progress conv=fsync", streaming=True)
+        logger.info("Raspbian installation complete.")

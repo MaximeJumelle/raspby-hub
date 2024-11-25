@@ -17,23 +17,47 @@ def render_template(name: str, **kwargs) -> str:
     template = env.get_template(name)
     return template.render(**kwargs)
 
-def run_subprocess(command: str, shell: bool = False, input: Optional[str] = None) -> int:
+def run_subprocess(
+    command: str,
+    shell: bool = False,
+    input: Optional[str] = None,
+    streaming: bool = False
+) -> int:
     """Run a subprocess, print its output (either stdout or stderr), and return its exit code."""
-    process = subprocess.run(
-        shlex.split(command) if not shell else command,
-        shell=shell,
-        input=input.encode() if input is not None else None,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    stdout, stderr = process.stdout, process.stderr
+    if streaming:
+        process = subprocess.Popen(
+            shlex.split(command) if not shell else command,
+            shell=shell,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(f"\033[90m| {output.strip()}\033[0m")
+        stderr = process.stderr.read()
+        if stderr:
+            print(f"\033[91m{stderr.strip()}\033[0m")
+        return process.returncode
+    else:
+        process = subprocess.run(
+            shlex.split(command) if not shell else command,
+            shell=shell,
+            input=input.encode() if input is not None else None,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = process.stdout, process.stderr
 
-    for line in stdout.decode().splitlines():
-        print(f"\033[90m| {line}\033[0m")
-    if stderr:
-        print(f"\033[91m{stderr.decode()}\033[0m")
+        for line in stdout.decode().splitlines():
+            print(f"\033[90m| {line}\033[0m")
+        if stderr:
+            print(f"\033[91m{stderr.decode()}\033[0m")
 
-    return process.returncode
+        return process.returncode
 
 
 def input_challenge(
