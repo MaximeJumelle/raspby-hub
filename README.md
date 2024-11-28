@@ -52,7 +52,3 @@ Contributions are welcome! If you’d like to improve this project, submit a pul
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-Let me know if you’d like to add more details, examples, or specific configurations.
