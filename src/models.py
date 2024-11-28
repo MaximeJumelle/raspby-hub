@@ -4,6 +4,8 @@ import os
 import pyudev
 import itertools
 import re
+import usb.core
+import usb.util
 
 from typing import Optional, List
 from datetime import datetime
@@ -22,7 +24,42 @@ class USBDevice:
         self.manufacturer_name: Optional[str] = None
 
     def __repr__(self):
-        return f"{self.name} ({self.manufacturer_name}) - {self.vendor_id:04x}:{self.product_id:04x}"
+        return f"{self.name} ({self.manufacturer_name})"
+    
+    @staticmethod
+    def list_devices(
+        require_dev_name: bool = False
+    ) -> List['USBDevice']:
+        """List all available USB devices."""
+        raw_devices = usb.core.find(find_all=True)
+        if raw_devices is None:
+            logger.error("Could not list USB devices. Do you have sufficient permissions?")
+            return []
+        
+        usb_devices_list: List[USBDevice] = []
+
+        for raw_device in raw_devices:
+            if not isinstance(raw_device, usb.core.Device):
+                continue
+            
+            device = USBDevice(
+                vendor_id=raw_device.idVendor,  # type: ignore
+                product_id=raw_device.idProduct,  # type: ignore
+                manufacturer_id=raw_device.iManufacturer,  # type: ignore
+            )
+
+            try:
+                device.manufacturer_name = usb.util.get_string(raw_device, raw_device.iManufacturer)  # type: ignore
+                device.name = usb.util.get_string(raw_device, raw_device.iProduct)  # type: ignore
+                if require_dev_name and device.find_dev_name() is None:
+                    continue
+                usb_devices_list.append(device)
+            except usb.core.USBError as e:
+                logger.warning(f"Could not retrieve information on USB device '{device}' : {e}")
+            except Exception:
+                logger.warning(f"Could not retrieve information on USB device '{device}'. Do you have sufficient permissions?")
+        
+        return usb_devices_list
     
     def find_dev_name(self) -> Optional[str]:
         """The the dev name (/dev/sda) associated to this device."""
