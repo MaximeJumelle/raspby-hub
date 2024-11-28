@@ -2,7 +2,6 @@ import sys
 
 
 
-from typing import Optional, List
 
 from src.logging import logger
 
@@ -83,7 +82,7 @@ def setup_raspbian():
         ssh_file_path = f"{boot_path}/ssh"
         with open(ssh_file_path, 'w') as ssh_file:
             ssh_file.write("")
-        logger.info(f"SSH has been enabled.")
+        logger.info("SSH has been enabled.")
         pass
 
 
@@ -93,3 +92,4 @@ def setup_raspbian():
         validator=lambda x: x.lower() in ["yes", "no"]
     ).lower() == "yes":
         pass
+    

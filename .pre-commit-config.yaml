@@ -5,7 +5,7 @@ repos:
     name: refactoring
     language: system
     entry: ruff
-    args: ["check", ".", "--config", "pyproject.toml"]
+    args: ["check", ".", "--config", "pyproject.toml", "--fix"]
     types: [python]
   - id: pyright
     name: pyright

@@ -174,7 +174,7 @@ class USBDevice:
         else:
             logger.info(f"Downloading Raspbian from '{raspbian_url}' locally.")
             run_subprocess(f"curl -o .images/{raspbian_archive} {raspbian_url}")
-            logger.info(f"Decompressing Raspbian archive.")
+            logger.info("Decompressing Raspbian archive.")
             run_subprocess(f"xz --decompress .images/{raspbian_archive}")
             os.remove(f".images/{raspbian_archive}")
 
