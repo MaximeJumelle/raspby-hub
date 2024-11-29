@@ -1,13 +1,13 @@
 import sys
 
-
-
+from jinja2 import Environment, FileSystemLoader
 
 from src.logging import logger
-
 from src.utils import input_challenge
 from src.models import USBDevice
 
+
+jinja_env = Environment(loader=FileSystemLoader('src/templates'))
 
 def install_raspbian():
     """Install Raspbian OS with utility tools and packages on a device."""
@@ -80,8 +80,8 @@ def setup_raspbian():
         validator=lambda x: x.lower() in ["yes", "no"]
     ).lower() == "yes":
         ssh_file_path = f"{boot_path}/ssh"
-        with open(ssh_file_path, 'w') as ssh_file:
-            ssh_file.write("")
+        with open(ssh_file_path, 'w') as f:
+            f.write("")
         logger.info("SSH has been enabled.")
         pass
 
@@ -92,4 +92,20 @@ def setup_raspbian():
         validator=lambda x: x.lower() in ["yes", "no"]
     ).lower() == "yes":
         pass
-    
+        wifi_ssid = input_challenge(
+            prompt="Please enter the Wi-Fi SSID : ",
+            expected_type=str,
+            validator=lambda x: len(x) > 0
+        )
+        wifi_password = input_challenge(
+            prompt="Please enter the Wi-Fi password : ",
+            expected_type=str,
+            validator=lambda x: len(x) > 0
+        )
+        wifi_file_path = f"{boot_path}/wpa_supplicant.conf"
+        with open(wifi_file_path, "w") as f:
+            f.write(
+                jinja_env
+                    .get_template("wpa_supplicant.conf.j2")
+                    .render(wifi_ssid=wifi_ssid, wifi_password=wifi_password, wifi_country="FR")
+            )

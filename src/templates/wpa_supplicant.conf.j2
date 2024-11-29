@@ -1,8 +1,8 @@
-{{- if wifi_country is not None}}
+{%- if wifi_country is defined %}
 country={{ wifi_country }}
-{{- endif }}
+{%- endif %}
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-network={{
+network={% raw %}{{{% endraw %}
     ssid="{{ wifi_ssid }}"
     psk="{{ wifi_password }}"
-}}
+{% raw %}}}{% endraw %}

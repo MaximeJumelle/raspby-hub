@@ -147,14 +147,16 @@ class USBDevice:
     def install_raspbian(self):
         """Install Raspbian OS on the device."""
         def get_latest_raspbian_url():
-            url = "https://downloads.raspberrypi.com/raspios_lite_armhf/images/"
+            #flavour_target = "raspios_lite_armhf"
+            flavour_target = "raspios_armhf"
+            url = f"https://downloads.raspberrypi.com/{flavour_target}/images/"
             response = requests.get(url)
             if response.status_code != 200:
                 logger.critical("Failed to fetch the Raspbian URL on download archives.")
                 sys.exit(1)
 
             body = response.text
-            dates = re.findall(r"raspios_lite_armhf-(\d{4}-\d{2}-\d{2})", body, flags=re.MULTILINE)
+            dates = re.findall(flavour_target + r"-(\d{4}-\d{2}-\d{2})", body, flags=re.MULTILINE)
             if len(dates) == 0:
                 logger.critical("Failed to fetch the Raspbian URL on download archives : dates not found.")
                 sys.exit(1)
@@ -163,7 +165,8 @@ class USBDevice:
                 current_date = max(current_date, datetime.strptime(d, "%Y-%m-%d"))
 
             current_date_formatted = current_date.strftime("%Y-%m-%d")
-            return f"{url}raspios_lite_armhf-{current_date_formatted}/{current_date_formatted}-raspios-bookworm-armhf-lite.img.xz"
+            return f"{url}{flavour_target}-{current_date_formatted}/{current_date_formatted}-raspios-bookworm-armhf.img.xz"
+            #return f"{url}{flavour_target}-{current_date_formatted}/{current_date_formatted}-raspios-bookworm-armhf-lite.img.xz"
 
         raspbian_url = get_latest_raspbian_url()
         raspbian_archive = raspbian_url.split("/")[-1]
